@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>The Poll (W.I.P)</title>
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #fff9db;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            position: relative;
+        }
+
+        .new-poll-btn {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #f39c12;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        .new-poll-btn:hover {
+            opacity: 0.9;
+        }
+
+        .new-poll-panel {
+            display: none;
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 290px;
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+            text-align: center;
+            z-index: 10;
+        }
+
+        .new-poll-panel h3 {
+            margin-top: 0;
+        }
+
+        .new-poll-panel input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin: 7px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .new-poll-panel button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .post-poll-btn {
+            background: #f39c12;
+            color: white;
+        }
+
+        .cancel-poll-btn {
+            background: #7f8c8d;
+            color: white;
+        }
+
+        @media (max-width: 750px) {
+            .new-poll-btn {
+                right: 12px;
+                top: 20px;
+                transform: none;
+            }
+
+            .new-poll-panel {
+                right: 12px;
+                left: 12px;
+                width: auto;
+                top: 75px;
+                transform: none;
+            }
+        }
+
+        .poll-container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .option-btn,
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .option-btn {
+            background: #fdfefe;
+            border: 2px solid #f39c12;
+            font-size: 16px;
+            text-align: left;
+        }
+
+        .option-btn:hover {
+            background: #fff4d6;
+        }
+
+        .bar-bg {
+            background: #eaeded;
+            border-radius: 8px;
+            height: 20px;
+            width: 100%;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            background: #f1c40f;
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .bar-fill.no {
+            background: #e74c3c;
+        }
+
+        .action-btn.ref {
+            background: #e67e22;
+            color: white;
+        }
+
+        .action-btn.chg {
+            background: #7f8c8d;
+            color: white;
+        }
+
+        .action-btn.rst {
+            background: #c0392b;
+            color: white;
+        }
+
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        #loading {
+            color: #666;
+        }
+
+        .auth-view {
+            display: none;
+        }
+
+        .auth-view input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin: 7px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            background: #f39c12;
+            color: white;
+        }
+
+        .auth-switch {
+            background: none;
+            border: none;
+            color: #e67e22;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 5px;
+        }
+
+
+        .avatar-preview {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+            margin: 0 auto 10px;
+            border: 2px solid #f39c12;
+            background: #f39c12;
+        }
+
+        .account-bar-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #f39c12;
+            display: block;
+        }
+
+        .vote-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #f39c12;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin-right: 8px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .account-bar {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: white;
+            padding: 8px 10px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+            font-size: 13px;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .account-bar button {
+            margin-left: 0;
+            border: none;
+            border-radius: 7px;
+            padding: 6px 9px;
+            cursor: pointer;
+            background: #f39c12;
+            color: white;
+            font-weight: bold;
+        }
+
+        .account-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            z-index: 30;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .account-card {
+            width: 100%;
+            max-width: 360px;
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+        }
+
+        .account-card h2 { margin-top: 0; }
+        .account-info {
+            background: #fff9db;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 12px 0;
+            text-align: left;
+        }
+        .account-info div { margin: 6px 0; }
+        .account-card input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin: 7px 0;
+        }
+        .account-card button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .save-account-btn { background: #f39c12; color: white; }
+        .close-account-btn { background: #7f8c8d; color: white; }
+        .logout-account-btn { background: #e74c3c; color: white; }
+
+        .vote-log {
+            margin-top: 20px;
+            text-align: left;
+            border-top: 1px solid #ddd;
+            padding-top: 12px;
+        }
+
+        .vote-log div {
+            padding: 5px 0;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+
+<div id="account-bar" class="account-bar" style="display:none;">
+    <img id="account-bar-avatar" class="account-bar-avatar" alt="Profile picture">
+    <span id="account-name"></span>
+    <button onclick="openAccount()">Account</button>
+</div>
+
+<div id="account-overlay" class="account-overlay" onclick="closeAccount(event)">
+    <div class="account-card" onclick="event.stopPropagation()">
+        <h2>My Account</h2>
+
+        <img id="account-avatar-preview" class="avatar-preview" alt="Profile picture">
+
+        <label for="avatar-file"><strong>Profile picture</strong></label>
+        <input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif">
+        <button class="save-account-btn" onclick="uploadAvatar()">Upload Picture</button>
+        <div id="avatar-status" style="font-size:13px;color:#666;margin-top:8px;"></div>
+
+        <div class="account-info">
+            <div><strong>Name:</strong> <span id="profile-display-name">Loading...</span></div>
+            <div><strong>Email:</strong> <span id="profile-email">Loading...</span></div>
+        </div>
+
+        <label for="new-display-name"><strong>Change display name</strong></label>
+        <input id="new-display-name" type="text" maxlength="40" placeholder="Your name">
+        <button class="save-account-btn" onclick="saveDisplayName()">Save Name</button>
+        <div id="account-status" style="font-size:13px;color:#666;margin-top:8px;"></div>
+
+        <button class="close-account-btn" onclick="closeAccount()">Close</button>
+        <button class="logout-account-btn" onclick="signOut()">Log Out</button>
+    </div>
+</div>
+
+<div class="poll-container">
+
+    <div id="auth-view" class="auth-view">
+        <div id="login-form">
+            <h2>Log In</h2>
+            <input id="login-email" type="email" placeholder="School email">
+            <input id="login-password" type="password" placeholder="Password">
+            <button class="auth-btn" onclick="logIn()">Log In</button>
+            <div id="login-status" style="font-size:13px;color:#666;margin-top:8px;"></div>
+            <button class="auth-switch" onclick="showSignUp()">Need an account? Sign up</button>
+        </div>
+
+        <div id="signup-form" style="display:none;">
+            <h2>Create Account</h2>
+            <input id="signup-name" type="text" maxlength="40" placeholder="Your name">
+            <input id="signup-email" type="email" placeholder="Email address">
+            <input id="signup-password" type="password" placeholder="Password (at least 6 characters)">
+            <button class="auth-btn" onclick="signUp()">Create Account</button>
+            <div id="signup-status" style="font-size:13px;color:#666;margin-top:8px;"></div>
+            <button class="auth-switch" onclick="showLogin()">Already have an account? Log in</button>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- VOTING AREA -->
+    <!-- ========================= -->
+
+    <div id="vote-view">
+
+        <h2 id="poll-question">Loading poll...</h2>
+
+        <button id="yes-button" class="option-btn" onclick="submitVote('yes')">
+            <span id="yes-label">Yes</span>
+        </button>
+
+        <button id="no-button" class="option-btn" onclick="submitVote('no')">
+            <span id="no-label">No</span>
+        </button>
+
+        <div id="status"></div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- RESULTS AREA -->
+    <!-- ========================= -->
+
+    <div id="results-view" style="display:none;">
+
+        <h2>The Live Verdict</h2>
+
+        <div id="results-display">
+            Loading...
+        </div>
+
+        <button class="action-btn chg" onclick="changeVote()">
+            🔄 Change My Vote
+        </button>
+
+        <button id="reset-votes-btn" class="action-btn rst" onclick="resetVotes()" style="display:none;">
+            Reset All (Admin Only)
+        </button>
+
+    </div>
+
+</div>
+
+
+    <!-- ========================= -->
+    <!-- NEW POLL -->
+    <!-- ========================= -->
+
+    <button id="new-poll-btn" class="new-poll-btn" onclick="showNewPollPanel()" style="display:none;">
+        + New Poll
+    </button>
+
+    <div id="new-poll-panel" class="new-poll-panel">
+
+        <h3>Post a New Poll</h3>
+
+        <input
+            id="new-poll-question"
+            type="text"
+            maxlength="200"
+            placeholder="Poll question"
+        >
+
+        <label for="new-poll-yes" style="display:block;text-align:left;font-size:13px;font-weight:bold;margin-top:6px;">Option 1</label>
+        <input
+            id="new-poll-yes"
+            type="text"
+            maxlength="100"
+            placeholder="Type any answer"
+        >
+
+        <label for="new-poll-no" style="display:block;text-align:left;font-size:13px;font-weight:bold;margin-top:6px;">Option 2</label>
+        <input
+            id="new-poll-no"
+            type="text"
+            maxlength="100"
+            placeholder="Type any answer"
+        >
+
+        <button class="post-poll-btn" onclick="postNewPoll()">
+            Post Poll
+        </button>
+
+        <button class="cancel-poll-btn" onclick="hideNewPollPanel()">
+            Cancel
+        </button>
+
+        <div id="new-poll-status" style="font-size:13px;color:#666;margin-top:8px;"></div>
+
+    </div>
+
+
+<script>
+    const SUPABASE_URL = "https://qgavkdpkusjhxvpdwgup.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_sfZFkfTtithrO3AgcU_kgw_oS5IcJmv";
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const ADMIN_FUNCTION_URL = SUPABASE_URL + "/functions/v1/admin-action";
+    const ADMIN_USER_ID = "c16936c9-0cc5-4e59-b7de-3b0fc6817035";
+    let currentPoll = null;
+    let currentProfile = null;
+    let currentUser = null;
+    let refreshTimer = null;
+
+    function showLogin() {
+        document.getElementById("login-form").style.display = "block";
+        document.getElementById("signup-form").style.display = "none";
+        document.getElementById("login-status").textContent = "";
+    }
+
+    function showSignUp() {
+        document.getElementById("login-form").style.display = "none";
+        document.getElementById("signup-form").style.display = "block";
+        document.getElementById("signup-status").textContent = "";
+    }
+
+    function showAuth() {
+        document.getElementById("auth-view").style.display = "block";
+        document.getElementById("vote-view").style.display = "none";
+        document.getElementById("results-view").style.display = "none";
+        document.getElementById("new-poll-panel").style.display = "none";
+        document.getElementById("account-bar").style.display = "none";
+        document.getElementById("account-overlay").style.display = "none";
+    }
+
+    function showApp() {
+        document.getElementById("auth-view").style.display = "none";
+        document.getElementById("account-bar").style.display = "block";
+        document.getElementById("account-name").textContent = currentProfile?.display_name || "Account";
+        updateAvatarImages();
+        document.getElementById("vote-view").style.display = "block";
+        document.getElementById("results-view").style.display = "none";
+        applyAdminUI();
+    }
+
+    function isAdmin() {
+        return !!currentUser && currentUser.id === ADMIN_USER_ID;
+    }
+
+    function applyAdminUI() {
+        const admin = isAdmin();
+        document.getElementById("new-poll-btn").style.display = admin ? "block" : "none";
+        document.getElementById("reset-votes-btn").style.display = admin ? "block" : "none";
+    }
+
+    function openAccount() {
+        if (!currentProfile) return;
+        document.getElementById("profile-display-name").textContent = currentProfile.display_name || "Account";
+        document.getElementById("profile-email").textContent = currentUser?.email || "";
+        document.getElementById("new-display-name").value = currentProfile.display_name || "";
+        document.getElementById("account-status").textContent = "";
+        document.getElementById("avatar-status").textContent = "";
+        updateAvatarImages();
+        document.getElementById("account-overlay").style.display = "flex";
+    }
+
+    function closeAccount(event) {
+        if (event && event.target !== document.getElementById("account-overlay")) return;
+        document.getElementById("account-overlay").style.display = "none";
+    }
+
+    function avatarFallback(name) {
+        const text = String(name || "U").trim();
+        return text ? text.charAt(0).toUpperCase() : "U";
+    }
+
+    function updateAvatarImages() {
+        const url = currentProfile?.avatar_url || "";
+        const name = currentProfile?.display_name || "Account";
+        const preview = document.getElementById("account-avatar-preview");
+        const barAvatar = document.getElementById("account-bar-avatar");
+
+        [preview, barAvatar].forEach(img => {
+            if (!img) return;
+            if (url) {
+                img.src = url;
+                img.alt = `${name}'s profile picture`;
+            } else {
+                img.removeAttribute("src");
+                img.alt = `${name}'s profile picture`;
+                img.style.background = "#f39c12";
+            }
+        });
+    }
+
+    async function uploadAvatar() {
+        if (!currentUser || !currentProfile) return;
+
+        const fileInput = document.getElementById("avatar-file");
+        const status = document.getElementById("avatar-status");
+        const file = fileInput.files[0];
+
+        if (!file) {
+            status.textContent = "Choose a picture first.";
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            status.textContent = "Picture must be 5 MB or smaller.";
+            return;
+        }
+
+        const allowed = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+        if (!allowed.includes(file.type)) {
+            status.textContent = "Use a PNG, JPG, WEBP, or GIF image.";
+            return;
+        }
+
+        status.textContent = "Uploading...";
+
+        const extensions = {
+            "image/png": "png",
+            "image/jpeg": "jpg",
+            "image/webp": "webp",
+            "image/gif": "gif"
+        };
+
+        // Use a new filename each time. This avoids needing Storage UPDATE
+        // permission when replacing an existing avatar.
+        const path = `${currentUser.id}/avatar-${Date.now()}.${extensions[file.type]}`;
+
+        const { error: uploadError } = await db.storage
+            .from("avatars")
+            .upload(path, file, {
+                cacheControl: "3600",
+                upsert: false,
+                contentType: file.type
+            });
+
+        if (uploadError) {
+            console.error("Avatar upload error:", uploadError);
+            status.textContent = `Couldn't upload: ${uploadError.message || "Storage error"}`;
+            return;
+        }
+
+        const { data: publicData } = db.storage
+            .from("avatars")
+            .getPublicUrl(path);
+
+        const avatarUrl = `${publicData.publicUrl}?v=${Date.now()}`;
+
+        const { data, error: profileError } = await db
+            .from("profiles")
+            .update({ avatar_url: avatarUrl })
+            .eq("id", currentUser.id)
+            .select("id, display_name, avatar_url")
+            .single();
+
+        if (profileError) {
+            console.error("Avatar profile update error:", profileError);
+            status.textContent = "Picture uploaded, but your profile couldn't be updated.";
+            return;
+        }
+
+        currentProfile = data;
+        updateAvatarImages();
+        status.textContent = "Profile picture updated!";
+        fileInput.value = "";
+    }
+
+    async function saveDisplayName() {
+        if (!currentProfile || !currentUser) return;
+        const input = document.getElementById("new-display-name");
+        const status = document.getElementById("account-status");
+        const name = input.value.trim();
+        if (!name) { status.textContent = "Please enter a name."; return; }
+
+        status.textContent = "Saving...";
+        const { data, error } = await db
+            .from("profiles")
+            .update({ display_name: name })
+            .eq("id", currentUser.id)
+            .select("id, display_name, avatar_url")
+            .single();
+
+        if (error) {
+            console.error("Profile update error:", error);
+            status.textContent = "Couldn't save your name.";
+            return;
+        }
+
+        currentProfile = data;
+        document.getElementById("account-name").textContent = data.display_name;
+        document.getElementById("profile-display-name").textContent = data.display_name;
+        updateAvatarImages();
+        status.textContent = "Saved!";
+    }
+
+    async function ensureProfile(user) {
+        const { data, error } = await db
+            .from("profiles")
+            .select("id, display_name, avatar_url")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Profile lookup error:", error);
+            return null;
+        }
+
+        if (data) return data;
+
+        const displayName = user.user_metadata?.display_name || user.email.split("@")[0];
+        const { data: created, error: createError } = await db
+            .from("profiles")
+            .insert({ id: user.id, display_name: displayName })
+            .select("id, display_name")
+            .single();
+
+        if (createError) {
+            console.error("Profile creation error:", createError);
+            return null;
+        }
+
+        return created;
+    }
+
+    async function signUp() {
+        const name = document.getElementById("signup-name").value.trim();
+        const email = document.getElementById("signup-email").value.trim().toLowerCase();
+        const password = document.getElementById("signup-password").value;
+        const status = document.getElementById("signup-status");
+
+        if (!name || !email || !password) {
+            status.textContent = "Please fill everything out.";
+            return;
+        }
+
+        if (password.length < 6) {
+            status.textContent = "Password must be at least 6 characters.";
+            return;
+        }
+
+        status.textContent = "Creating your account...";
+
+        const { data, error } = await db.auth.signUp({
+            email,
+            password,
+            options: {
+                emailRedirectTo: window.location.origin,
+                data: { display_name: name }
+            }
+        });
+
+        if (error) {
+            console.error(error);
+            status.textContent = error.message;
+            return;
+        }
+
+        if (data.user && data.session) {
+            currentProfile = await ensureProfile(data.user);
+            await startApp(data.user);
+        } else {
+            status.textContent = "Account created! Check your school email and click the confirmation link, then log in.";
+        }
+    }
+
+    async function logIn() {
+        const email = document.getElementById("login-email").value.trim().toLowerCase();
+        const password = document.getElementById("login-password").value;
+        const status = document.getElementById("login-status");
+
+        status.textContent = "Logging in...";
+
+        const { data, error } = await db.auth.signInWithPassword({ email, password });
+
+        if (error) {
+            console.error(error);
+            status.textContent = error.message;
+            return;
+        }
+
+        currentProfile = await ensureProfile(data.user);
+        if (!currentProfile) {
+            status.textContent = "Logged in, but your profile could not be loaded.";
+            return;
+        }
+
+        await startApp(data.user);
+    }
+
+    async function signOut() {
+        await db.auth.signOut();
+        currentProfile = null;
+        currentUser = null;
+        currentPoll = null;
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = null;
+        showAuth();
+        showLogin();
+    }
+
+    async function startApp(user) {
+        currentUser = user;
+        showApp();
+        const loaded = await loadCurrentPoll();
+        if (!loaded) return;
+        await checkExistingVote();
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(async () => {
+            if (currentPoll) await refreshVotes(false);
+        }, 5000);
+    }
+
+    function showVotePage() {
+        document.getElementById("vote-view").style.display = "block";
+        document.getElementById("results-view").style.display = "none";
+        document.getElementById("status").textContent = "";
+    }
+
+    function showResultsPage() {
+        document.getElementById("vote-view").style.display = "none";
+        document.getElementById("results-view").style.display = "block";
+    }
+
+    async function loadCurrentPoll() {
+        const { data, error } = await db
+            .from("polls")
+            .select("id, question, yes_option, no_option")
+            .order("id", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Poll loading error:", error);
+            document.getElementById("status").textContent = "Unable to load the poll.";
+            return false;
+        }
+
+        if (!data) {
+            currentPoll = null;
+            document.getElementById("poll-question").textContent = "No polls yet.";
+            return false;
+        }
+
+        currentPoll = data;
+        document.getElementById("poll-question").textContent = data.question;
+        document.getElementById("yes-button").textContent = data.yes_option;
+        document.getElementById("no-button").textContent = data.no_option;
+        return true;
+    }
+
+    async function checkExistingVote() {
+        if (!currentPoll) return;
+        const { data: userData } = await db.auth.getUser();
+        if (!userData.user) return;
+
+        const { data, error } = await db
+            .from("poll_votes")
+            .select("id, choice")
+            .eq("poll_id", currentPoll.id)
+            .eq("voter_id", userData.user.id)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Error checking vote:", error);
+            document.getElementById("status").textContent = "Unable to connect to the vote database.";
+            return;
+        }
+
+        if (data) await refreshVotes();
+        else showVotePage();
+    }
+
+    async function submitVote(choice) {
+        const { data: userData } = await db.auth.getUser();
+        if (!userData.user || !currentPoll) return;
+
+        document.getElementById("status").textContent = "Submitting your vote...";
+
+        const { data: existingVote, error: checkError } = await db
+            .from("poll_votes")
+            .select("id")
+            .eq("poll_id", currentPoll.id)
+            .eq("voter_id", userData.user.id)
+            .maybeSingle();
+
+        if (checkError) {
+            console.error(checkError);
+            alert("There was a problem checking your vote.");
+            return;
+        }
+
+        if (existingVote) {
+            alert("You have already voted! Use the 'Change My Vote' button if you want to switch.");
+            await refreshVotes();
+            return;
+        }
+
+        const { error } = await db.from("poll_votes").insert({
+            poll_id: currentPoll.id,
+            voter_id: userData.user.id,
+            choice
+        });
+
+        if (error) {
+            console.error("Vote submission error:", error);
+            if (error.code === "23505") alert("You have already voted!");
+            else alert("There was a problem submitting your vote.");
+            await refreshVotes();
+            return;
+        }
+
+        await refreshVotes();
+    }
+
+    async function changeVote() {
+        const { data: userData } = await db.auth.getUser();
+        if (!userData.user || !currentPoll) return;
+        if (!confirm("Are you sure you want to change your vote?")) return;
+
+        const { error } = await db.from("poll_votes")
+            .delete()
+            .eq("poll_id", currentPoll.id)
+            .eq("voter_id", userData.user.id);
+
+        if (error) {
+            console.error("Change vote error:", error);
+            alert("Unable to change your vote.");
+            return;
+        }
+        showVotePage();
+    }
+
+    async function refreshVotes(showPage = true) {
+        if (!currentPoll) return;
+        const display = document.getElementById("results-display");
+        if (showPage) display.innerHTML = "<p>Loading results...</p>";
+
+        const { data, error } = await db
+            .from("poll_votes")
+            .select("voter_id, choice")
+            .eq("poll_id", currentPoll.id);
+
+        if (error) {
+            console.error("Results error:", error);
+            if (showPage) display.innerHTML = "<p>Unable to load the results.</p>";
+            return;
+        }
+
+        let yes = 0, no = 0;
+        data.forEach(vote => vote.choice === "yes" ? yes++ : no++);
+        const total = yes + no;
+        const pctYes = total > 0 ? Math.round((yes / total) * 100) : 0;
+        const pctNo = total > 0 ? Math.round((no / total) * 100) : 0;
+
+        const ids = [...new Set(data.map(v => v.voter_id))];
+        let profiles = [];
+        if (ids.length) {
+            const { data: profileData, error: profileError } = await db
+                .from("profiles")
+                .select("id, display_name, avatar_url")
+                .in("id", ids);
+            if (!profileError) profiles = profileData || [];
+        }
+
+        const profileMap = new Map(profiles.map(p => [p.id, p]));
+        const log = data.map(v => {
+            const profile = profileMap.get(v.voter_id);
+            const name = profile?.display_name || "Unknown user";
+            const avatarUrl = profile?.avatar_url || "";
+            const avatar = avatarUrl
+                ? `<img class="vote-avatar" src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(name)}'s profile picture">`
+                : `<span class="vote-avatar" aria-hidden="true">${escapeHtml(avatarFallback(name))}</span>`;
+
+            return `<div style="display:flex;align-items:center;">
+                ${avatar}
+                <span><strong>${escapeHtml(name)}</strong> — ${escapeHtml(v.choice === "yes" ? (currentPoll.yes_option || "Yes") : (currentPoll.no_option || "No"))}</span>
+            </div>`;
+        }).join("");
+
+        const yesLabel = escapeHtml(currentPoll.yes_option || "Yes");
+        const noLabel = escapeHtml(currentPoll.no_option || "No");
+
+        display.innerHTML = `
+            <div style="text-align:left;font-weight:bold;margin-bottom:5px;">${yesLabel}: ${yes} vote(s) (${pctYes}%)</div>
+            <div class="bar-bg"><div class="bar-fill" style="width:${pctYes}%"></div></div>
+            <div style="text-align:left;font-weight:bold;margin-bottom:5px;">${noLabel}: ${no} vote(s) (${pctNo}%)</div>
+            <div class="bar-bg"><div class="bar-fill no" style="width:${pctNo}%"></div></div>
+            <div class="vote-log"><strong>Who voted</strong>${log || "<div>No votes yet.</div>"}</div>
+        `;
+
+        if (showPage) showResultsPage();
+    }
+
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));
+    }
+
+    async function callAdminFunction(action, payload = {}) {
+        if (!isAdmin()) {
+            alert("You do not have admin access.");
+            return null;
+        }
+
+        const { data: sessionData } = await db.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+
+        if (!accessToken) {
+            alert("Please log in again.");
+            return null;
+        }
+
+        const response = await fetch(ADMIN_FUNCTION_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ action, ...payload })
+        });
+
+        let result = {};
+        try { result = await response.json(); } catch (_) {}
+
+        if (!response.ok) {
+            alert(result.error || "The admin action failed.");
+            return null;
+        }
+
+        return result;
+    }
+
+    async function resetVotes() {
+        if (!isAdmin()) {
+            alert("You do not have admin access.");
+            return;
+        }
+        if (!confirm("Are you sure you want to delete ALL votes?")) return;
+
+        const result = await callAdminFunction("reset_votes");
+        if (!result) return;
+
+        alert("All votes have been reset!");
+        showVotePage();
+        await refreshVotes();
+    }
+
+    async function showNewPollPanel() {
+        if (!isAdmin()) {
+            alert("You do not have admin access.");
+            return;
+        }
+        const result = await callAdminFunction("check_admin");
+        if (!result) return;
+        document.getElementById("new-poll-panel").style.display = "block";
+    }
+
+    function hideNewPollPanel() {
+        document.getElementById("new-poll-panel").style.display = "none";
+        document.getElementById("new-poll-status").textContent = "";
+    }
+
+    async function postNewPoll() {
+        const question = document.getElementById("new-poll-question").value.trim();
+        const yesOption = document.getElementById("new-poll-yes").value.trim();
+        const noOption = document.getElementById("new-poll-no").value.trim();
+        if (!question || !yesOption || !noOption) { alert("Please fill in the question and both options."); return; }
+
+        const status = document.getElementById("new-poll-status");
+        status.textContent = "Posting poll...";
+
+        const result = await callAdminFunction("create_poll", {
+            question,
+            yes_option: yesOption,
+            no_option: noOption
+        });
+
+        if (!result) {
+            status.textContent = "Unable to post the poll.";
+            return;
+        }
+
+        currentPoll = result.poll;
+        document.getElementById("new-poll-question").value = "";
+        document.getElementById("new-poll-yes").value = "";
+        document.getElementById("new-poll-no").value = "";
+        hideNewPollPanel();
+        showVotePage();
+        await loadCurrentPoll();
+    }
+
+    async function initialize() {
+        const { data } = await db.auth.getSession();
+        if (data.session?.user) {
+            currentProfile = await ensureProfile(data.session.user);
+            if (currentProfile) await startApp(data.session.user);
+            else showAuth();
+        } else {
+            showAuth();
+            showLogin();
+        }
+
+        db.auth.onAuthStateChange(async (_event, session) => {
+            if (session?.user && !currentProfile) {
+                currentProfile = await ensureProfile(session.user);
+                if (currentProfile) await startApp(session.user);
+            }
+        });
+    }
+
+    initialize();
+</script>
+
+</body>
+</html>
